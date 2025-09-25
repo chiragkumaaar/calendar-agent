@@ -17,7 +17,7 @@ from find_slot_and_create import (
     find_first_slot,
     create_event,
 )
-from src.google_auth_helpers import get_creds_from_env_or_local
+from google_auth_helpers import get_creds_from_env_or_local
 
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
