@@ -66,13 +66,13 @@ cd calendar-agent
  ```env
  OPENAI_API_KEY=your_openai_api_key
 ```
-5 Google API credentials- 
+5 Google API credentials
  Enable the **Google Calendar API** in [Google Cloud
  Console](https://console.cloud.google.com/).  - Download your `credentials.json` and place it in the project root.  - On first run, youll be asked to authenticate, and a `token.json` will be created (dont commit these files).
 6. Run the agent
  **Streamlit UI (recommended):**
  ```bash
  streamlit run src/ui.py
-
+```
 **Notes on Security**
 - Do **not** commit `.env`, `credentials.json`, or `token.json` to GitHub.  - Use `.env.example` to show placeholders instead.  
