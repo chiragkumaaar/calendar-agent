@@ -8,13 +8,21 @@ from zoneinfo import ZoneInfo
 import datetime
 
 # Reuse functions from find_slot_and_create
-from find_slot_and_create import get_creds, parse_time_frame, preferred_hours_to_windows, \
-    query_freebusy, merge_busy_intervals, invert_busy_to_free, find_first_slot, create_event
+from find_slot_and_create import (
+    parse_time_frame,
+    preferred_hours_to_windows,
+    query_freebusy,
+    merge_busy_intervals,
+    invert_busy_to_free,
+    find_first_slot,
+    create_event,
+)
+from src.google_auth_helpers import get_creds_from_env_or_local
 
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
-    raise SystemExit("Missing OPENAI_API_KEY in .env")
+    raise SystemExit("Missing OPENAI_API_KEY in environment variables")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -100,21 +108,32 @@ def main():
             print("Also found names (not used as emails):", ", ".join(attendee_names))
 
     # Step 2: Setup Google Calendar service
-    creds = get_creds()
-    from googleapiclient.discovery import build
-    service = build("calendar", "v3", credentials=creds)
+    try:
+        SCOPES = ["https://www.googleapis.com/auth/calendar"]
+        creds = get_creds_from_env_or_local(SCOPES)
+        from googleapiclient.discovery import build
+        service = build("calendar", "v3", credentials=creds)
+    except Exception as e:
+        print(f"\n❌ Failed to authenticate with Google Calendar: {e}")
+        return
 
-    cal_meta = service.calendars().get(calendarId="primary").execute()
-    tz = cal_meta.get("timeZone", "UTC")
-    user_tz = ZoneInfo(tz)
+    try:
+        cal_meta = service.calendars().get(calendarId="primary").execute()
+        tz = cal_meta.get("timeZone", "UTC")
+        user_tz = ZoneInfo(tz)
+    except Exception as e:
+        print(f"\n❌ Failed to get calendar metadata: {e}")
+        return
 
     # Step 3: Parse time window
     start_dt_local, end_dt_local = parse_time_frame(time_frame, user_tz)
     fb_start = start_dt_local.astimezone(ZoneInfo("UTC"))
     fb_end = end_dt_local.astimezone(ZoneInfo("UTC"))
 
-    # For freebusy, we will query only emails we actually have. If none, we query just the primary calendar (yourself).
-    freebusy_emails = attendee_emails if attendee_emails else [service.calendarList().get(calendarId='primary').execute().get('id')]
+    # For freebusy, query only emails if we have them, else just your primary calendar
+    freebusy_emails = attendee_emails if attendee_emails else [
+        service.calendarList().get(calendarId='primary').execute().get('id')
+    ]
 
     # Step 4: Query freebusy
     calendars = query_freebusy(service, freebusy_emails, fb_start, fb_end)
@@ -147,13 +166,11 @@ def main():
     slot_end_local = slot_end_utc.astimezone(user_tz)
 
     # Step 6: Create event
-    # If we have emails, include them as attendees. If not, create event on primary calendar only.
     create_attendees = attendee_emails if attendee_emails else []
-
     sanitized = f"Scheduled by AI Meeting Agent.\nTopic: {topic}\nDuration: {duration} minutes"
     created = create_event(service, topic, slot_start_local, slot_end_local,
-                       create_attendees,
-                       description=sanitized)
+                           create_attendees,
+                           description=sanitized)
   
     print("\n✅ Meeting scheduled")
     print(f"Title: {topic}")

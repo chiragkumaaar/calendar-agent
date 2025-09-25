@@ -8,7 +8,6 @@ from zoneinfo import ZoneInfo
 # Reuse functions from agent.py and find_slot_and_create.py (make sure running from project root)
 from agent import parse_request
 from find_slot_and_create import (
-    get_creds,
     parse_time_frame,
     preferred_hours_to_windows,
     query_freebusy,
@@ -17,13 +16,18 @@ from find_slot_and_create import (
     find_first_slot,
     create_event,
 )
+from src.google_auth_helpers import get_creds_from_env_or_local
 
 st.set_page_config(page_title="AI Meeting Scheduler", page_icon="📅", layout="centered")
 st.title("📅 AI Meeting Scheduler")
 st.write("Schedule a meeting with anyone in one click")
 
 # Input box
-user_input = st.text_area("Your request", height=120, placeholder="e.g. Schedule a 30 minute meeting with alice@example.com tomorrow morning about the project.")
+user_input = st.text_area(
+    "Your request",
+    height=120,
+    placeholder="e.g. Schedule a 30 minute meeting with alice@example.com tomorrow morning about the project."
+)
 
 # Helpers
 def is_valid_email(e: str) -> bool:
@@ -35,7 +39,9 @@ def make_description(topic: str, duration: int, attendees_display: str) -> str:
 
 def slot_conflicts(service, emails, start_dt_utc, end_dt_utc):
     """Return (True, details) if any attendee calendar reports busy during the window."""
-    items = [{"id": e} for e in emails] if emails else [{"id": service.calendarList().get(calendarId="primary").execute().get("id")}]
+    items = [{"id": e} for e in emails] if emails else [
+        {"id": service.calendarList().get(calendarId="primary").execute().get("id")}
+    ]
     body = {
         "timeMin": start_dt_utc.isoformat(),
         "timeMax": end_dt_utc.isoformat(),
@@ -71,9 +77,6 @@ if st.button("Schedule Meeting"):
     st.markdown(f"**Duration (min):** {parsed.get('duration_minutes') or 60}")
     st.markdown(f"**Preferred times:** {parsed.get('preferred_times') or 'none'}")
 
-    # if st.checkbox("Show raw parsed JSON (debug)", value=False):
-    #     st.code(json.dumps(parsed, indent=2, ensure_ascii=False), language="json")
-
     # Extract parsed fields
     attendees_parsed = parsed.get("attendees") or []
     topic = parsed.get("topic") or "Meeting"
@@ -95,9 +98,10 @@ if st.button("Schedule Meeting"):
         st.error("Parsed attendee emails contain invalid entries: " + ", ".join(invalid))
         st.stop()
 
-    # Authenticate with Google Calendar
+    # Authenticate with Google Calendar (env-first)
     try:
-        creds = get_creds()
+        SCOPES = ["https://www.googleapis.com/auth/calendar"]
+        creds = get_creds_from_env_or_local(SCOPES)
         from googleapiclient.discovery import build
         service = build("calendar", "v3", credentials=creds)
     except Exception as e:
@@ -115,7 +119,6 @@ if st.button("Schedule Meeting"):
 
     # Parse the time window
     start_dt_local, end_dt_local = parse_time_frame(time_frame, user_tz)
-    # Ensure we have reasonable end (fallback to next 7 days)
     if (end_dt_local - start_dt_local).days < 1:
         end_dt_local = start_dt_local + datetime.timedelta(days=7)
 
@@ -156,7 +159,7 @@ if st.button("Schedule Meeting"):
         st.error("❌ No available slot found in the requested window & preferred times.")
         st.stop()
 
-    # Final pre-create conflict check (very important)
+    # Final pre-create conflict check
     conflict, busy_details = slot_conflicts(service, emails, slot_start_utc, slot_end_utc)
     if conflict:
         st.error("❌ Cannot create event: one or more attendees are busy during the chosen slot.")
@@ -164,7 +167,7 @@ if st.button("Schedule Meeting"):
             st.write(busy_details)
         st.stop()
 
-    # Create event with sanitized description (avoid raw prompt in invite body)
+    # Create event with sanitized description
     attendees_display = ", ".join(emails)
     description = make_description(topic, duration, attendees_display)
 
@@ -180,4 +183,5 @@ if st.button("Schedule Meeting"):
     st.markdown(f"**Title:** {topic}")
     st.markdown(f"**Time:** {slot_start_local.strftime('%a, %d %b %Y, %I:%M %p')} → {slot_end_local.strftime('%I:%M %p')} ({tz})")
     st.markdown(f"**Attendees (invites sent):** {attendees_display}")
-    if created.get("htmlLink"): st.markdown(f"[📅 View in Google Calendar]({created['htmlLink']})")
+    if created.get("htmlLink"):
+        st.markdown(f"[📅 View in Google Calendar]({created['htmlLink']})")

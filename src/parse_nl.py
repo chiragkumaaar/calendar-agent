@@ -1,17 +1,16 @@
 # src/parse_nl.py
 import os
 import json
-from dotenv import load_dotenv
 from openai import OpenAI
 
-load_dotenv()
+# Read API key from environment (works on Render / Streamlit / local if env var is set)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
-    raise SystemExit("Missing OPENAI_API_KEY in .env")
+    raise SystemExit("Missing OPENAI_API_KEY in environment. Set OPENAI_API_KEY as an env var or in your secrets manager.")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-# Structured schema we want back
+# Structured schema example (for reference)
 SCHEMA_EXAMPLE = {
     "attendees": ["First Last", "..."],
     "topic": "short summary of meeting topic",
@@ -39,6 +38,7 @@ Be conservative: prefer null than hallucinated emails or times.
 
 def parse_request(user_text: str):
     prompt = SYSTEM_PROMPT + "\n\nUser request:\n" + user_text + "\n\nReturn the JSON now."
+
     try:
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -51,6 +51,7 @@ def parse_request(user_text: str):
         raise RuntimeError(f"OpenAI API error: {e}")
 
     # try to parse JSON from response safely
+    parsed = None
     try:
         parsed = json.loads(content)
     except Exception:

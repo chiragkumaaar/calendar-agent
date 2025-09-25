@@ -2,27 +2,10 @@
 from __future__ import print_function
 import argparse
 import datetime
-import os
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
+from src.google_auth_helpers import get_creds_from_env_or_local
 
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
-
-def get_creds():
-    creds = None
-    if os.path.exists("token.json"):
-        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
-            creds = flow.run_local_server(port=0)
-        with open("token.json", "w") as token:
-            token.write(creds.to_json())
-    return creds
 
 def iso(dt):
     return dt.isoformat() + "Z"
@@ -51,7 +34,7 @@ def pretty_print_busy(calendars):
             print(f"Busy: {start} -> {end}")
 
 def main():
-    parser = argparse.ArgumentParser(description="Check freebusy for attendees (uses token.json)")
+    parser = argparse.ArgumentParser(description="Check freebusy for attendees (using env secrets or token.json)")
     parser.add_argument("--attendees", "-a", required=True,
                         help="Comma-separated list of attendee emails (e.g. a@x.com,b@y.com)")
     parser.add_argument("--days", "-d", type=int, default=7,
@@ -64,7 +47,8 @@ def main():
         print("No attendees provided.")
         return
 
-    creds = get_creds()
+    # Use the same helper as the rest of the app
+    creds = get_creds_from_env_or_local(SCOPES)
     service = build("calendar", "v3", credentials=creds)
 
     if args.start:
