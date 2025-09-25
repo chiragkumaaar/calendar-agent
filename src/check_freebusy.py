@@ -3,7 +3,7 @@ from __future__ import print_function
 import argparse
 import datetime
 from googleapiclient.discovery import build
-from src.google_auth_helpers import get_creds_from_env_or_local
+from google_auth_helpers import get_creds_from_env_or_local
 
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
