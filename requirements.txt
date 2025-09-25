@@ -7,3 +7,4 @@ tqdm
 langchain
 langchain_openai
 streamlit
+src
