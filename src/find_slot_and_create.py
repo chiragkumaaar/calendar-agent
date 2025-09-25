@@ -2,7 +2,7 @@
 import datetime
 from zoneinfo import ZoneInfo
 from googleapiclient.discovery import build
-from src.google_auth_helpers import get_creds_from_env_or_local
+from google_auth_helpers import get_creds_from_env_or_local
 
 # Scopes required for the Google Calendar API
 SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
