@@ -16,7 +16,7 @@ from find_slot_and_create import (
     find_first_slot,
     create_event,
 )
-from src.google_auth_helpers import get_creds_from_env_or_local
+from google_auth_helpers import get_creds_from_env_or_local
 
 st.set_page_config(page_title="AI Meeting Scheduler", page_icon="📅", layout="centered")
 st.title("📅 AI Meeting Scheduler")
