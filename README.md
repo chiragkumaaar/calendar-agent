@@ -50,13 +50,13 @@ An AI-powered calendar agent that parses natural language meeting requests, find
 ```bash
 git clone https://github.com/chiragkumaaar/calendar-agent.git
 cd calendar-agent
-
+```
 2. Create a virtual environment
  ```bash
  python -m venv venv
  source venv/bin/activate     # Mac/Linux
  venv\Scripts\activate        # Windows
-
+```
 3. Install dependencies
 ```bash
  pip install -r requirements.txt
@@ -65,7 +65,7 @@ cd calendar-agent
  Create a `.env` file in the project root:
  ```env
  OPENAI_API_KEY=your_openai_api_key
-
+```
 5 Google API credentials- 
  Enable the **Google Calendar API** in [Google Cloud
  Console](https://console.cloud.google.com/).  - Download your `credentials.json` and place it in the project root.  - On first run, youll be asked to authenticate, and a `token.json` will be created (dont commit these files).
