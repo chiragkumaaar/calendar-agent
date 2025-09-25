@@ -6,7 +6,7 @@ An AI-powered calendar agent that parses natural language meeting requests, find
 
 ## 🚀 What the Agent Does
 - Understands natural language requests like:
-  > *"Schedule a 30-minute meeting with alice@example.com and bob@example.com next week, mornings preferred, to discuss the project."*
+  > *"Schedule a 30-minute meeting with Chirag@example.com and Siddhartha@example.com next week, mornings preferred, to discuss the project."*
 - Extracts key details:
   - Attendees (emails)
   - Topic / purpose
